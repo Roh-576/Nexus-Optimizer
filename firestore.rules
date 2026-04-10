@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: logs
+    // Fields:
+    //   - message: string (required)
+    //   - type: string (required, enum: ['info', 'warning', 'success'])
+    //   - timestamp: timestamp (required)
+    //   - nodeId: string (optional)
+    //
+    // Collection: plans
+    // Fields:
+    //   - recommendation: string (required)
+    //   - efficiencyGain: number (required)
+    //   - explanation: string (required)
+    //   - timestamp: timestamp (required)
+    //   - actions: list (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "rohitpattela@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidLog(data) {
+      return hasRequiredFields(['message', 'type', 'timestamp']) &&
+             hasOnlyAllowedFields(['message', 'type', 'timestamp', 'nodeId']) &&
+             data.message is string && data.message.size() < 1000 &&
+             data.type in ['info', 'warning', 'success'] &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidPlan(data) {
+      return hasRequiredFields(['recommendation', 'efficiencyGain', 'explanation', 'timestamp']) &&
+             hasOnlyAllowedFields(['recommendation', 'efficiencyGain', 'explanation', 'timestamp', 'actions']) &&
+             data.recommendation is string && data.recommendation.size() < 2000 &&
+             data.efficiencyGain is number &&
+             data.explanation is string && data.explanation.size() < 5000 &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidLog(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /plans/{planId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPlan(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

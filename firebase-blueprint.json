@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "SystemLog": {
+      "title": "SystemLog",
+      "description": "A log entry for system events and anomalies.",
+      "type": "object",
+      "properties": {
+        "message": { "type": "string", "description": "The log message." },
+        "type": { "type": "string", "enum": ["info", "warning", "success"], "description": "The type of log entry." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the event occurred." },
+        "nodeId": { "type": "string", "description": "Optional ID of the node associated with the event." }
+      },
+      "required": ["message", "type", "timestamp"]
+    },
+    "OptimizationPlan": {
+      "title": "OptimizationPlan",
+      "description": "A record of an AI-generated optimization plan.",
+      "type": "object",
+      "properties": {
+        "recommendation": { "type": "string" },
+        "efficiencyGain": { "type": "number" },
+        "explanation": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeId": { "type": "string" },
+              "action": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["recommendation", "efficiencyGain", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/logs": {
+      "schema": "SystemLog",
+      "description": "Collection of system event logs."
+    },
+    "/plans": {
+      "schema": "OptimizationPlan",
+      "description": "Collection of AI optimization plans."
+    }
+  }
+}
